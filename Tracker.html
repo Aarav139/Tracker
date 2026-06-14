@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Study Balancer</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --surface: #1e1e1e;
+            --primary: #bb86fc;
+            --text: #e0e0e0;
+            --new-color: #ffb74d;
+            --hw-color: #64b5f6;
+            --old-color: #81c784;
+        }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            max-width: 1000px;
+            width: 100%;
+        }
+        h1 { text-align: center; margin-bottom: 5px; }
+        .balance-bar-container {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            margin-bottom: 30px;
+        }
+        .segment { height: 100%; transition: width 0.4s ease; }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: var(--surface);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        input, select, button {
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        input { flex-grow: 1; background: #333; color: white; }
+        select { background: #333; color: white; }
+        button { 
+            background: var(--primary); 
+            color: #000; 
+            cursor: pointer; 
+            font-weight: bold;
+        }
+        .columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .column {
+            background: var(--surface);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .column h2 { margin-top: 0; font-size: 18px; border-bottom: 2px solid; padding-bottom: 10px; }
+        #col-new h2 { border-color: var(--new-color); color: var(--new-color); }
+        #col-hw h2 { border-color: var(--hw-color); color: var(--hw-color); }
+        #col-old h2 { border-color: var(--old-color); color: var(--old-color); }
+        
+        .task {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+            padding: 10px;
+            background: #2a2a2a;
+            border-radius: 5px;
+        }
+        .task input[type="checkbox"] { width: 18px; height: 18px; cursor: pointer; }
+        .completed span { text-decoration: line-through; color: #888; }
+        .delete-btn { margin-left: auto; background: transparent; color: #ff5252; padding: 5px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Daily Study Balancer</h1>
+    <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Aim for an even split across all three zones.</p>
+    
+    <div class="balance-bar-container">
+        <div id="bar-new" class="segment" style="background: var(--new-color); width: 0%;"></div>
+        <div id="bar-hw" class="segment" style="background: var(--hw-color); width: 0%;"></div>
+        <div id="bar-old" class="segment" style="background: var(--old-color); width: 0%;"></div>
+    </div>
+
+    <div class="input-group">
+        <input type="text" id="taskInput" placeholder="Enter a specific task...">
+        <select id="categorySelect">
+            <option value="new">New Content</option>
+            <option value="hw">Homework</option>
+            <option value="old">Old Content / Revision</option>
+        </select>
+        <button onclick="addTask()">Add Task</button>
+    </div>
+
+    <div class="columns">
+        <div class="column" id="col-new">
+            <h2>New Content</h2>
+            <div id="list-new"></div>
+        </div>
+        <div class="column" id="col-hw">
+            <h2>Homework</h2>
+            <div id="list-hw"></div>
+        </div>
+        <div class="column" id="col-old">
+            <h2>Old Content</h2>
+            <div id="list-old"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let tasks = [
+        { id: 1, text: "Read Class 11 Physics Module - Kinematics", cat: "new", done: false },
+        { id: 2, text: "Math HW - RD Sharma Ex 2.1", cat: "hw", done: false },
+        { id: 3, text: "Revise Chemistry Atomic Structure notes", cat: "old", done: false }
+    ];
+
+    function render() {
+        ['new', 'hw', 'old'].forEach(cat => {
+            const list = document.getElementById(`list-${cat}`);
+            list.innerHTML = '';
+            tasks.filter(t => t.cat === cat).forEach(task => {
+                const div = document.createElement('div');
+                div.className = `task ${task.done ? 'completed' : ''}`;
+                div.innerHTML = `
+                    <input type="checkbox" ${task.done ? 'checked' : ''} onchange="toggle(${task.id})">
+                    <span>${task.text}</span>
+                    <button class="delete-btn" onclick="deleteTask(${task.id})">✖</button>
+                `;
+                list.appendChild(div);
+            });
+        });
+        updateBalance();
+    }
+
+    function addTask() {
+        const text = document.getElementById('taskInput').value;
+        const cat = document.getElementById('categorySelect').value;
+        if (!text) return;
+        tasks.push({ id: Date.now(), text, cat, done: false });
+        document.getElementById('taskInput').value = '';
+        render();
+    }
+
+    function toggle(id) {
+        const task = tasks.find(t => t.id === id);
+        task.done = !task.done;
+        render();
+    }
+
+    function deleteTask(id) {
+        tasks = tasks.filter(t => t.id !== id);
+        render();
+    }
+
+    function updateBalance() {
+        const doneTasks = tasks.filter(t => t.done);
+        const total = doneTasks.length || 1; // Prevent division by zero
+        
+        const newPct = (doneTasks.filter(t => t.cat === 'new').length / total) * 100;
+        const hwPct = (doneTasks.filter(t => t.cat === 'hw').length / total) * 100;
+        const oldPct = (doneTasks.filter(t => t.cat === 'old').length / total) * 100;
+
+        document.getElementById('bar-new').style.width = tasks.some(t=>t.done) ? `${newPct}%` : '0%';
+        document.getElementById('bar-hw').style.width = tasks.some(t=>t.done) ? `${hwPct}%` : '0%';
+        document.getElementById('bar-old').style.width = tasks.some(t=>t.done) ? `${oldPct}%` : '0%';
+    }
+
+    render();
+</script>
+</body>
+</html>
